@@ -1,0 +1,1 @@
+dotnet publish -c Release --self-contained -r linux-arm RozalinaBot.sln

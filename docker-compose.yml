@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  rozalinabot:
+    image: rozalinabot
+    build:
+      context: .
+      dockerfile: RozalinaBot\Dockerfile
