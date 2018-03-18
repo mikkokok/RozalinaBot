@@ -4,39 +4,34 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using RozalinaBot.Helpers;
 
 namespace RozalinaBot.Collectors.Ouman
 {
     internal class OumanCollector
     {
         private string _url;
-        private bool _pollingState;
         private readonly string _polledUrl;
+        private readonly TimeSpan _starTimeSpan;
+        private readonly TimeSpan _fiveMinTimeSpan;
+        private Timer _timer;
+        public string LastResult { get; private set; }
 
         public OumanCollector(string oumanurl)
         {
-            this._polledUrl = oumanurl;
+            _polledUrl = oumanurl;
+            _starTimeSpan = TimeSpan.Zero;
+            _fiveMinTimeSpan = TimeSpan.FromMinutes(5);
+            ServicePointManager.ServerCertificateValidationCallback += CertificateValidator.ValidateSslCertificate;
             StartPolling();
         }
 
-        public string LastResult { get; private set; }
-
         public void StartPolling()
         {
-            _pollingState = true;
-            new Thread(RunLoop).Start();
-        }
-        public void StopPolling()
-        {
-            _pollingState = false;
-        }
-        private async void RunLoop()
-        {
-            while (_pollingState)
+            _timer = new Timer(async e =>
             {
-                LastResult =  await GetAsync(_polledUrl);
-                Thread.Sleep(120000);
-            }
+                LastResult = await GetAsync(_polledUrl);
+            }, null, _starTimeSpan, _fiveMinTimeSpan);
         }
 
         public async Task<string> GetAsync(string address)
@@ -51,7 +46,6 @@ namespace RozalinaBot.Collectors.Ouman
                 var split = result.Split('?')[1].Split(';');
                 foreach (var splitted in split)
                 {
-
                     sb.Append(Translate(splitted));
                     sb.Append("\n");
                 }
@@ -66,19 +60,17 @@ namespace RozalinaBot.Collectors.Ouman
         private static async Task<string> DoRequestAsync(string uri)
         {
             string results;
-            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-			// https://stackoverflow.com/questions/43783595/accept-only-self-signed-ssl-certificate-c-sharp
-            var req = (HttpWebRequest)WebRequest.Create(uri);
-            req.Credentials = new NetworkCredential(AppLoader.LoadedConfig.OumanUser, AppLoader.LoadedConfig.OumanPassword);
-            req.PreAuthenticate = true;
-            using (var resp = await req.GetResponseAsync())
+            var request = (HttpWebRequest)WebRequest.Create(uri);
+
+            request.Credentials = new NetworkCredential(AppLoader.LoadedConfig.OumanUser, AppLoader.LoadedConfig.OumanPassword);
+            request.PreAuthenticate = true;
+            using (var resp = await request.GetResponseAsync())
             {
                 using (var sr = new StreamReader(resp.GetResponseStream()))
                 {
                     results = await sr.ReadToEndAsync();
                 }
             }
-
             return results;
         }
         private static string Translate(string setwithcode)

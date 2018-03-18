@@ -9,6 +9,8 @@ namespace RozalinaBot.Config
         [XmlElement]
         public string OumanAddress;
         [XmlElement]
+        public string OumanThumbPrint;
+        [XmlElement]
         public string OumanUser;
         [XmlElement]
         public string OumanPassword;

@@ -66,7 +66,6 @@ namespace RozalinaBot.InfoDeployers.Telegram
         }
         private async Task SendOumanReadings(int sendToId)
         {
-            //var readings = await _oumanCollector.GetAsync("https://rozalina.sotasankari.sandels:81/");
             var readings = _oumanCollector.LastResult;
             await SendMessage(readings, sendToId);
         }
