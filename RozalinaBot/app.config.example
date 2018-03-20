@@ -1,6 +1,17 @@
 <ConfigData>
   <TelegramToken>LELELELELELELELEL</TelegramToken>
   <OumanAddress>https://google.com:443/</OumanAddress>
+  <OumanThumbPrint>LILILILILILILILII</OumanThumbPrint>
   <OumanUser>username</OumanUser>
   <OumanPassword>password</OumanPassword>
+    <OumanRegisteredUsers>
+    <User>
+      <Id>666</Id>
+      <Username>KRAA</Username>
+    </User>
+    <User>
+      <Id>666</Id>
+      <Username>Testi</Username>
+    </User>
+  </OumanRegisteredUsers>
 </ConfigData>

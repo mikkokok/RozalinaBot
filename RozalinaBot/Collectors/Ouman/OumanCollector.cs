@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,7 +24,6 @@ namespace RozalinaBot.Collectors.Ouman
             _polledUrl = oumanurl;
             _starTimeSpan = TimeSpan.Zero;
             _fiveMinTimeSpan = TimeSpan.FromMinutes(5);
-            ServicePointManager.ServerCertificateValidationCallback += CertificateValidator.ValidateSslCertificate;
             StartPolling();
         }
 
@@ -61,7 +62,8 @@ namespace RozalinaBot.Collectors.Ouman
         {
             string results;
             var request = (HttpWebRequest)WebRequest.Create(uri);
-
+            ServicePointManager.ServerCertificateValidationCallback = CertificateValidator.ValidateSslCertificate;
+            
             request.Credentials = new NetworkCredential(AppLoader.LoadedConfig.OumanUser, AppLoader.LoadedConfig.OumanPassword);
             request.PreAuthenticate = true;
             using (var resp = await request.GetResponseAsync())

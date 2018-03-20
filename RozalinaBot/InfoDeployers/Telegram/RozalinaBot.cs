@@ -14,14 +14,12 @@ namespace RozalinaBot.InfoDeployers.Telegram
     internal class RozalinaBot
     {
         private static TelegramBotClient _botClient;
-        private static List<User> _registeredUsers;
         private const string TuxFile = @"Files/tux.png";
         private static OumanCollector _oumanCollector;
 
         public RozalinaBot(string token, string oumanurl)
         {
             _botClient = new TelegramBotClient(token);
-            _registeredUsers = new List<User>();
             _oumanCollector = new OumanCollector(oumanurl);
             InitListeners();
         }
@@ -42,11 +40,9 @@ namespace RozalinaBot.InfoDeployers.Telegram
 
         private async void BotClient_OnMessage(object sender, global::Telegram.Bot.Args.MessageEventArgs e)
         {
-            if (string.IsNullOrEmpty(e.Message.Text) || e.Message.Type != MessageType.TextMessage)
+            if (string.IsNullOrEmpty(e.Message.Text) || e.Message.Type != MessageType.TextMessage || e.Message.From != null && !IsRegisteredUser(e.Message.From))
                 return;
             var message = e.Message;
-
-            RegisterUser(message.From);
 
             switch (message.Text.Split(' ').First())
             {
@@ -63,6 +59,11 @@ namespace RozalinaBot.InfoDeployers.Telegram
                     break;
             }
 
+        }
+
+        private bool IsRegisteredUser(User user)
+        {
+            return AppLoader.LoadedConfig.OumanRegisteredUsers.Any(registeredUser => registeredUser.Id == user.Id && registeredUser.Username.Equals(user.Username));
         }
         private async Task SendOumanReadings(int sendToId)
         {
@@ -98,22 +99,9 @@ namespace RozalinaBot.InfoDeployers.Telegram
 
             return sb.ToString();
         }
-
-        private void RegisterUser(User user)
-        {
-            if (_registeredUsers.Contains(user))
-                return;
-            _registeredUsers.Add(user);
-        }
-
         private async Task SendMessage(string message, int replyToId)
         {
             await _botClient.SendTextMessageAsync(replyToId, message);
-        }
-        private List<string> GetChatIds()
-        {
-            var ids = new List<string>();
-            return ids;
         }
         static async Task TestApiAsync()
         {
