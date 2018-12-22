@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Security;
@@ -18,12 +19,20 @@ namespace RozalinaBot.Collectors.Ouman
         private readonly TimeSpan _fiveMinTimeSpan;
         private Timer _timer;
         public string LastResult { get; private set; }
+        private double _dailyMaxTemp;
+        private double _dailyMinTemp;
+        private string _dailyMaxTempTime;
+        private string _dailyMinTempTime;
+        private DateTime _todaysDate;
+
 
         public OumanCollector(string oumanurl)
         {
             _polledUrl = oumanurl;
+            _todaysDate = DateTime.Today.Date;
             _starTimeSpan = TimeSpan.Zero;
             _fiveMinTimeSpan = TimeSpan.FromMinutes(5);
+            _todaysDate = DateTime.Today.AddDays(-1).Date;
             StartPolling();
         }
 
@@ -40,7 +49,7 @@ namespace RozalinaBot.Collectors.Ouman
             var sb = new StringBuilder();
             try
             {
-                _url = $"{address}request?S_227_85;S_1000_0;S_261_85;S_278_85;S_259_85;S_275_85;S_102_85;S_284_85;S_274_85;S_272_85;S_26_85;";
+                _url = $"{address}request?S_227_85;S_1000_0;S_261_85;S_278_85;S_259_85;S_275_85;S_102_85;S_284_85;S_274_85;S_272_85;";
                 var result = await DoRequestAsync(_url);
                 if (string.IsNullOrEmpty(result))
                     return "";
@@ -55,15 +64,17 @@ namespace RozalinaBot.Collectors.Ouman
             {
                 Console.WriteLine(ex);
                 sb.Append($"An error occurred when querying {_url}");
+                sb.Append($"Reason {ex.Message}");
+
             }
-            return sb.ToString();
+            return AddHighAndLowTempToResult(sb.ToString());
         }
         private static async Task<string> DoRequestAsync(string uri)
         {
             string results;
             var request = (HttpWebRequest)WebRequest.Create(uri);
             ServicePointManager.ServerCertificateValidationCallback = CertificateValidator.ValidateSslCertificate;
-            
+
             request.Credentials = new NetworkCredential(AppLoader.LoadedConfig.OumanUser, AppLoader.LoadedConfig.OumanPassword);
             request.PreAuthenticate = true;
             using (var resp = await request.GetResponseAsync())
@@ -75,14 +86,17 @@ namespace RozalinaBot.Collectors.Ouman
             }
             return results;
         }
-        private static string Translate(string setwithcode)
+        private string Translate(string setwithcode)
         {
             if (string.IsNullOrEmpty(setwithcode) || !setwithcode.Contains("=")) return "";
             var code = setwithcode.Split('=')[0];
             var result = setwithcode.Split('=')[1];
             string translation;
             if (code.Equals("S_227_85"))
+            {
                 translation = "Ulkolämpötila";
+                SetHighAndLowTemp(result);
+            }
             else if (code.Equals("S_261_85"))
                 translation = "Mitattu huonelämpötila";
             else if (code.Equals("S_278_85"))
@@ -100,9 +114,9 @@ namespace RozalinaBot.Collectors.Ouman
             else if (code.Equals("S_274_85"))
                 translation = "Huonelämpökaukoasetus TMR/SP";
             else if (code.Equals("S_284_85"))
-                translation = "L1 Huonelämpötila";
+                translation = "Huonelämpötila";
             else if (code.Equals("S_272_85"))
-                translation = "L1 Venttiilin asento";
+                translation = "Venttiilin asento";
             else if (code.Equals("S_26_85"))
                 translation = "Trendin näytteenottoväli";
             else if (code.Equals("S_1000_0"))
@@ -111,6 +125,44 @@ namespace RozalinaBot.Collectors.Ouman
                 translation = code;
 
             return $"{translation} = {result}";
+        }
+
+        private void SetHighAndLowTemp(string result)
+        {
+
+            var temp = double.Parse(result, CultureInfo.InvariantCulture);
+            if (_todaysDate != DateTime.Today.Date)
+            {
+                _todaysDate = DateTime.Today.Date;
+                _dailyMaxTemp = temp;
+                _dailyMinTemp = temp;
+                _dailyMaxTempTime = GetCurrentTime();
+                _dailyMinTempTime = GetCurrentTime();
+                return;
+            }
+            if (temp < _dailyMinTemp)
+            {
+                _dailyMinTemp = temp;
+                _dailyMinTempTime = GetCurrentTime();
+                return;
+            }
+            if (!(_dailyMaxTemp < temp)) return;
+
+            _dailyMaxTemp = temp;
+            _dailyMaxTempTime = GetCurrentTime();
+        }
+        private string AddHighAndLowTempToResult(string result)
+        {
+            var sb  = new StringBuilder(result);
+            sb.AppendLine($"Minimi lämpötila = {_dailyMinTemp} kello {_dailyMinTempTime}");
+            sb.AppendLine($"Maksimi lämpötila = {_dailyMaxTemp} kello {_dailyMaxTempTime}");
+            return sb.ToString();
+        }
+
+        private string GetCurrentTime()
+        {
+            return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
+                TimeZoneInfo.FindSystemTimeZoneById("FLE Standard Time")).ToShortTimeString();
         }
     }
 }
