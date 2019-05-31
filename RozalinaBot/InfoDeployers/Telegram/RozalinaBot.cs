@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using RozalinaBot.Collectors.Ouman;
@@ -50,9 +51,11 @@ namespace RozalinaBot.InfoDeployers.Telegram
                     break;
                 case "/startOuman":
                     _oumanCollector.StartPolling();
+                    await SendMessage("Ouman polling started", message.From.Id);
                     break;
-                case "stopOuman":
+                case "/stopOuman":
                     _oumanCollector.StopPolling();
+                    await SendMessage("Ouman polling stopped", message.From.Id);
                     break;
                 case "/photo":
                     await SendTuxFile(message.Chat.Id);

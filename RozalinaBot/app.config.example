@@ -8,12 +8,12 @@
     <User>
       <Id>666</Id>
       <Username>KRAA</Username>
-      <isAdmin>True</isAdmin>
+      <isAdmin>true</isAdmin>
     </User>
     <User>
       <Id>666</Id>
       <Username>Testi</Username>
-      <isAdmin>True</isAdmin>
+      <isAdmin>false</isAdmin>
     </User>
   </OumanRegisteredUsers>
 </ConfigData>

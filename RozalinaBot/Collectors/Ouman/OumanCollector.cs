@@ -25,6 +25,7 @@ namespace RozalinaBot.Collectors.Ouman
         private string _dailyMinTempTime;
         private DateTime _todaysDate;
         private string _errorTime;
+        private bool _polling;
 
 
         public OumanCollector(string oumanurl)
@@ -39,15 +40,24 @@ namespace RozalinaBot.Collectors.Ouman
 
         public void StartPolling()
         {
+            if (_polling)
+                return;
+
             _timer = new Timer(async e =>
             {
                 LastResult = await GetAsync(_polledUrl);
             }, null, _starTimeSpan, _fiveMinTimeSpan);
+            _polling = true;
         }
 
         public void StopPolling()
         {
+            if (!_polling)
+                return;
+            SetErrorTime();
+            LastResult = $"Error at {_errorTime}";
             _timer.Dispose();
+            _polling = false;
         }
 
         public async Task<string> GetAsync(string address)
@@ -65,7 +75,7 @@ namespace RozalinaBot.Collectors.Ouman
                     sb.Append(Translate(splitted));
                     sb.Append("\n");
                 }
-                sb.Append(AddHighAndLowTempToResult(sb.ToString()));
+                sb.Append(GetHighAndLowTempToResult());
             }
             catch (Exception ex)
             {
@@ -73,8 +83,7 @@ namespace RozalinaBot.Collectors.Ouman
                 sb.Append($"An error occurred when querying {_url}");
                 sb.Append($"Reason {ex.Message}");
                 StopPolling();
-                SetErrorTime();
-                sb.Append($"Polling halted at {_errorTime} ");
+                sb.AppendLine($"Polling halted at {_errorTime} ");
             }
             return sb.ToString();
         }
@@ -160,11 +169,11 @@ namespace RozalinaBot.Collectors.Ouman
             _dailyMaxTemp = temp;
             _dailyMaxTempTime = GetCurrentTimeAsString();
         }
-        private string AddHighAndLowTempToResult(string result)
+        private string GetHighAndLowTempToResult()
         {
-            var sb = new StringBuilder(result);
-            sb.AppendLine($"Minimi lämpötila = {_dailyMinTemp} kello {_dailyMinTempTime}");
-            sb.AppendLine($"Maksimi lämpötila = {_dailyMaxTemp} kello {_dailyMaxTempTime}");
+            var sb = new StringBuilder();
+            sb.AppendLine($"Minimi lämpötila = {_dailyMinTemp} kello: {_dailyMinTempTime}");
+            sb.AppendLine($"Maksimi lämpötila = {_dailyMaxTemp} kello: {_dailyMaxTempTime}");
             return sb.ToString();
         }
 
