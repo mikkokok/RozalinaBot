@@ -26,6 +26,8 @@ namespace RozalinaBot.Config
         public int Id;
         [XmlElement]
         public string Username;
+        [XmlElement]
+        public bool isAdmin;
     }
 
 }

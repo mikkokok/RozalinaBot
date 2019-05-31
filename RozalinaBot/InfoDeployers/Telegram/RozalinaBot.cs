@@ -31,11 +31,10 @@ namespace RozalinaBot.InfoDeployers.Telegram
             _botClient.StartReceiving();
         }
 
-        private void BotClient_OnInlineQuery(object sender, global::Telegram.Bot.Args.InlineQueryEventArgs e)
+        private static async void BotClient_OnInlineQuery(object sender, global::Telegram.Bot.Args.InlineQueryEventArgs e)
         {
-            Console.WriteLine($"Got message from: {e.InlineQuery.From}");
-            Console.WriteLine($"Got message query: {e.InlineQuery.Query}");
-            Console.WriteLine($"Got message id: {e.InlineQuery.Id}");
+            var message = ComposeMessage(e.InlineQuery.From.Username, e.InlineQuery.Query);
+            await SendAdminMessages(message);
         }
 
         private async void BotClient_OnMessage(object sender, global::Telegram.Bot.Args.MessageEventArgs e)
@@ -49,28 +48,40 @@ namespace RozalinaBot.InfoDeployers.Telegram
                 case "/getOuman":
                     await SendOumanReadings(message.From.Id);
                     break;
-
+                case "/startOuman":
+                    _oumanCollector.StartPolling();
+                    break;
+                case "stopOuman":
+                    _oumanCollector.StopPolling();
+                    break;
                 case "/photo":
                     await SendTuxFile(message.Chat.Id);
                     break;
-
                 default:
                     await ReplyUsage(message.From.Id);
                     break;
             }
-
         }
 
-        private bool IsRegisteredUser(User user)
+        private static string ComposeMessage(string from, string query)
         {
-            return AppLoader.LoadedConfig.OumanRegisteredUsers.Any(registeredUser => registeredUser.Id == user.Id && registeredUser.Username.Equals(user.Username));
+            var sb = new StringBuilder();
+            sb.AppendLine($"Message from {from}");
+            sb.Append($"Message: {query}");
+            return sb.ToString();
         }
-        private async Task SendOumanReadings(int sendToId)
+        private static async Task SendAdminMessages(string message)
+        {
+            foreach (var adminId in GetAdmins())
+            {
+                await _botClient.SendTextMessageAsync(adminId, message);
+            }
+        }
+        private static async Task SendOumanReadings(int sendToId)
         {
             var readings = _oumanCollector.LastResult;
             await SendMessage(readings, sendToId);
         }
-
         private static async Task SendTuxFile(long chatId)
         {
             await _botClient.SendChatActionAsync(chatId, ChatAction.UploadPhoto);
@@ -83,8 +94,23 @@ namespace RozalinaBot.InfoDeployers.Telegram
                 await _botClient.SendPhotoAsync(chatId, fileToSend, "Nice Picture");
             }
         }
+        private static bool IsRegisteredUser(User user)
+        {
+            return AppLoader.LoadedConfig.OumanRegisteredUsers.Any(registeredUser => registeredUser.Id == user.Id && registeredUser.Username.Equals(user.Username));
+        }
 
-        private async Task ReplyUsage(int replyToId)
+        private static IEnumerable<int> GetAdmins()
+        {
+            var AdminIds = new List<int>();
+            foreach (var user in AppLoader.LoadedConfig.OumanRegisteredUsers)
+            {
+                if (user.isAdmin)
+                    AdminIds.Add(user.Id);
+            }
+            return AdminIds;
+        }
+
+        private static async Task ReplyUsage(int replyToId)
         {
             await _botClient.SendTextMessageAsync(replyToId, GetUsage());
         }
@@ -94,19 +120,16 @@ namespace RozalinaBot.InfoDeployers.Telegram
             var sb = new StringBuilder();
             sb.AppendLine("Usage:");
             sb.AppendLine("/getOuman - send latest Ouman readings");
+            sb.AppendLine("/startOuman - start reading Ouman readings");
+            sb.AppendLine("/stopOuman - stop reading Ouman readings");
             sb.AppendLine("/photo - send a photo");
-            sb.AppendLine("/Usage - send this usage");
+            sb.AppendLine("/Usage - send this how-to");
 
             return sb.ToString();
         }
-        private async Task SendMessage(string message, int replyToId)
+        private static async Task SendMessage(string message, int replyToId)
         {
             await _botClient.SendTextMessageAsync(replyToId, message);
-        }
-        static async Task TestApiAsync()
-        {
-            var me = await _botClient.GetMeAsync();
-            System.Console.WriteLine($"Hello! My name is {me.FirstName}");
         }
     }
 }
