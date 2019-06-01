@@ -2,8 +2,6 @@
 using System.Globalization;
 using System.IO;
 using System.Net;
-using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,8 +22,9 @@ namespace RozalinaBot.Collectors.Ouman
         private string _dailyMaxTempTime;
         private string _dailyMinTempTime;
         private DateTime _todaysDate;
-        private string _errorTime;
         private bool _polling;
+        private int retries;
+        public string PollingState { get; private set; }
 
 
         public OumanCollector(string oumanurl)
@@ -54,8 +53,7 @@ namespace RozalinaBot.Collectors.Ouman
         {
             if (!_polling)
                 return;
-            SetErrorTime();
-            LastResult = $"Error at {_errorTime}";
+            LastResult = $"Error at {GetCurrentTimeAsString()}";
             _timer.Dispose();
             _polling = false;
         }
@@ -76,14 +74,17 @@ namespace RozalinaBot.Collectors.Ouman
                     sb.Append("\n");
                 }
                 sb.Append(GetHighAndLowTempToResult());
+                retries = 3;
             }
             catch (Exception ex)
             {
                 sb.Clear();
                 sb.Append($"An error occurred when querying {_url}");
-                sb.Append($"Reason {ex.Message}");
+                sb.AppendLine($"Reason {ex.Message}");
+                retries--;
+                if (retries > 0) return sb.ToString();
                 StopPolling();
-                sb.AppendLine($"Polling halted at {_errorTime} ");
+                sb.AppendLine($"Polling halted at {GetCurrentTimeAsString()} ");
             }
             return sb.ToString();
         }
@@ -177,20 +178,20 @@ namespace RozalinaBot.Collectors.Ouman
             return sb.ToString();
         }
 
-        private string GetCurrentTimeAsString()
+        private static string GetCurrentTimeAsString()
         {
             return GetCurrentTime().ToShortTimeString();
         }
 
-        private DateTime GetCurrentTime()
+        private static DateTime GetCurrentTime()
         {
             return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
                 TimeZoneInfo.FindSystemTimeZoneById("FLE Standard Time"));
         }
 
-        private void SetErrorTime()
+        private void SetPollingState(string newState)
         {
-            _errorTime = GetCurrentTimeAsString();
+            PollingState = newState;
         }
     }
 }

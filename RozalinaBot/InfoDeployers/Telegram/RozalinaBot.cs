@@ -27,15 +27,7 @@ namespace RozalinaBot.InfoDeployers.Telegram
         private void InitListeners()
         {
             _botClient.OnMessage += BotClient_OnMessage;
-            _botClient.OnInlineQuery += BotClient_OnInlineQuery;
-
             _botClient.StartReceiving();
-        }
-
-        private static async void BotClient_OnInlineQuery(object sender, global::Telegram.Bot.Args.InlineQueryEventArgs e)
-        {
-            var message = ComposeMessage(e.InlineQuery.From.Username, e.InlineQuery.Query);
-            await SendAdminMessages(message);
         }
 
         private async void BotClient_OnMessage(object sender, global::Telegram.Bot.Args.MessageEventArgs e)
@@ -50,18 +42,24 @@ namespace RozalinaBot.InfoDeployers.Telegram
                     await SendOumanReadings(message.From.Id);
                     break;
                 case "/startOuman":
+                    var oldState = _oumanCollector.PollingState;
                     _oumanCollector.StartPolling();
-                    await SendMessage("Ouman polling started", message.From.Id);
+                    await SendMessage($"Ouman polling started, was {oldState}", message.From.Id);
                     break;
                 case "/stopOuman":
+                    var tempState = _oumanCollector.PollingState;
                     _oumanCollector.StopPolling();
-                    await SendMessage("Ouman polling stopped", message.From.Id);
+                    await SendMessage($"Ouman polling stopped, was {tempState}", message.From.Id);
                     break;
                 case "/photo":
                     await SendTuxFile(message.Chat.Id);
                     break;
-                default:
+                case "/":
+                case "Usage":
                     await ReplyUsage(message.From.Id);
+                    break;
+                default:
+                    await SendAdminMessages(message.Text, message.From.Username);
                     break;
             }
         }
@@ -73,8 +71,10 @@ namespace RozalinaBot.InfoDeployers.Telegram
             sb.Append($"Message: {query}");
             return sb.ToString();
         }
-        private static async Task SendAdminMessages(string message)
+        private static async Task SendAdminMessages(string message, string from)
         {
+            var sb = new StringBuilder(message);
+            sb.AppendLine($"from: {from}");
             foreach (var adminId in GetAdmins())
             {
                 await _botClient.SendTextMessageAsync(adminId, message);
