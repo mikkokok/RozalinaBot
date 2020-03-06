@@ -17,6 +17,8 @@ namespace RozalinaBot.Config
         public string OumanPassword;
         [XmlArray("OumanRegisteredUsers"), XmlArrayItem(typeof(User))]
         public List<User> OumanRegisteredUsers;
+        [XmlElement]
+        public string StorageAccountConnectionString;
 
     }
     [XmlRoot("ConfigData")]

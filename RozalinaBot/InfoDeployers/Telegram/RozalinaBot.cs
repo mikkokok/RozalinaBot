@@ -6,9 +6,12 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using RozalinaBot.Collectors.Ouman;
+using RozalinaBot.Collectors.StorageAccount;
+using RozalinaBot.Config;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using User = Telegram.Bot.Types.User;
 
 namespace RozalinaBot.InfoDeployers.Telegram
 {
@@ -17,11 +20,13 @@ namespace RozalinaBot.InfoDeployers.Telegram
         private static TelegramBotClient _botClient;
         private const string TuxFile = @"Files/tux.png";
         private static OumanCollector _oumanCollector;
+        private static StorageCollector _storageCollector;
 
-        public RozalinaBot(string token, string oumanurl)
+        public RozalinaBot(ConfigData config)
         {
-            _botClient = new TelegramBotClient(token);
-            _oumanCollector = new OumanCollector(oumanurl);
+            _botClient = new TelegramBotClient(config.TelegramToken);
+            _oumanCollector = new OumanCollector(config.OumanAddress);
+            _storageCollector = new StorageCollector(config);
             InitListeners();
         }
         private void InitListeners()
@@ -42,20 +47,26 @@ namespace RozalinaBot.InfoDeployers.Telegram
                     await SendOumanReadings(message.From.Id);
                     break;
                 case "/startOuman":
-                    var oldState = _oumanCollector.PollingState;
                     _oumanCollector.StartPolling();
-                    await SendMessage($"Ouman polling started, was {oldState}", message.From.Id);
+                    await SendMessage($"Ouman polling started", message.From.Id);
                     break;
                 case "/stopOuman":
-                    var tempState = _oumanCollector.PollingState;
                     _oumanCollector.StopPolling();
-                    await SendMessage($"Ouman polling stopped, was {tempState}", message.From.Id);
+                    await SendMessage($"Ouman polling stopped", message.From.Id);
                     break;
                 case "/photo":
                     await SendTuxFile(message.Chat.Id);
                     break;
+                case "/setCatLitter":
+                    await _storageCollector.UpdateCatLitterTime();
+                    await SendMessage("Cat litter time set", message.From.Id);
+                    break;
+                case "/getCatLitter":
+                    var time = await _storageCollector.GetCatLitterTime();
+                    await SendMessage($"Last time was {time}", message.From.Id);
+                    break;
                 case "/":
-                case "Usage":
+                case "/Usage":
                     await ReplyUsage(message.From.Id);
                     break;
                 default:
@@ -126,6 +137,8 @@ namespace RozalinaBot.InfoDeployers.Telegram
             sb.AppendLine("/startOuman - start reading Ouman readings");
             sb.AppendLine("/stopOuman - stop reading Ouman readings");
             sb.AppendLine("/photo - send a photo");
+            sb.AppendLine("/getCatLitter - Get last time");
+            sb.AppendLine("/setCatLitter - Set last time");
             sb.AppendLine("/Usage - send this how-to");
 
             return sb.ToString();

@@ -53,7 +53,7 @@ namespace RozalinaBot.Collectors.Ouman
         {
             if (!_polling)
                 return;
-            LastResult = $"Error at {GetCurrentTimeAsString()}";
+            LastResult = $"Error at {TimeConverter.GetCurrentTimeAsString()}";
             _timer.Dispose();
             _polling = false;
         }
@@ -74,7 +74,7 @@ namespace RozalinaBot.Collectors.Ouman
                     sb.Append("\n");
                 }
                 sb.Append(GetHighAndLowTempToResult());
-                retries = 3;
+                retries = 10;
             }
             catch (Exception ex)
             {
@@ -84,7 +84,7 @@ namespace RozalinaBot.Collectors.Ouman
                 retries--;
                 if (retries > 0) return sb.ToString();
                 StopPolling();
-                sb.AppendLine($"Polling halted at {GetCurrentTimeAsString()} ");
+                sb.AppendLine($"Polling halted at {TimeConverter.GetCurrentTimeAsString()} ");
             }
             return sb.ToString();
         }
@@ -92,7 +92,6 @@ namespace RozalinaBot.Collectors.Ouman
         {
             string results;
             var request = (HttpWebRequest)WebRequest.Create(uri);
-            ServicePointManager.ServerCertificateValidationCallback = CertificateValidator.ValidateSslCertificate;
 
             request.Credentials = new NetworkCredential(AppLoader.LoadedConfig.OumanUser, AppLoader.LoadedConfig.OumanPassword);
             request.PreAuthenticate = true;
@@ -155,20 +154,20 @@ namespace RozalinaBot.Collectors.Ouman
                 _todaysDate = DateTime.Today.Date;
                 _dailyMaxTemp = temp;
                 _dailyMinTemp = temp;
-                _dailyMaxTempTime = GetCurrentTimeAsString();
-                _dailyMinTempTime = GetCurrentTimeAsString();
+                _dailyMaxTempTime = TimeConverter.GetCurrentTimeAsString();
+                _dailyMinTempTime = TimeConverter.GetCurrentTimeAsString();
                 return;
             }
             if (temp < _dailyMinTemp)
             {
                 _dailyMinTemp = temp;
-                _dailyMinTempTime = GetCurrentTimeAsString();
+                _dailyMinTempTime = TimeConverter.GetCurrentTimeAsString();
                 return;
             }
             if (!(_dailyMaxTemp < temp)) return;
 
             _dailyMaxTemp = temp;
-            _dailyMaxTempTime = GetCurrentTimeAsString();
+            _dailyMaxTempTime = TimeConverter.GetCurrentTimeAsString();
         }
         private string GetHighAndLowTempToResult()
         {
@@ -176,17 +175,6 @@ namespace RozalinaBot.Collectors.Ouman
             sb.AppendLine($"Minimi lämpötila = {_dailyMinTemp} kello: {_dailyMinTempTime}");
             sb.AppendLine($"Maksimi lämpötila = {_dailyMaxTemp} kello: {_dailyMaxTempTime}");
             return sb.ToString();
-        }
-
-        private static string GetCurrentTimeAsString()
-        {
-            return GetCurrentTime().ToShortTimeString();
-        }
-
-        private static DateTime GetCurrentTime()
-        {
-            return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
-                TimeZoneInfo.FindSystemTimeZoneById("FLE Standard Time"));
         }
 
         private void SetPollingState(string newState)

@@ -36,7 +36,7 @@ namespace RozalinaBot
         public static void LoadTelegramBot()
         {
             if (_rozalinaBot == null)
-                _rozalinaBot = new InfoDeployers.Telegram.RozalinaBot(_configLoader.LoadedConfig.TelegramToken, _configLoader.LoadedConfig.OumanAddress);
+                _rozalinaBot = new InfoDeployers.Telegram.RozalinaBot(_configLoader.LoadedConfig);
         }
 
         private AppLoader()
