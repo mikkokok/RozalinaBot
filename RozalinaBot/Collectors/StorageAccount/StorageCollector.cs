@@ -17,8 +17,6 @@ namespace RozalinaBot.Collectors.StorageAccount
         public StorageCollector(ConfigData config)
         {
             _storageConnectionString = config.StorageAccountConnectionString;
-            UpdateCatLitterTime().Wait();
-            GetCatLitterTime().Wait();
         }
 
         public async Task UpdateCatLitterTime()
