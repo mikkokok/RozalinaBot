@@ -1,11 +1,14 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using RozalinaBot.Helpers;
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using RozalinaBot.Helpers;
 
 namespace RozalinaBot.Collectors.Ouman
 {
@@ -25,11 +28,17 @@ namespace RozalinaBot.Collectors.Ouman
         private bool _polling;
         private int retries;
         public string PollingState { get; private set; }
+        private IConfiguration _config;
+        private string _proxyUser;
+        private string _proxyPass;
 
 
-        public OumanCollector(string oumanurl)
+        public OumanCollector(IConfiguration config)
         {
-            _polledUrl = oumanurl;
+            _config = config;
+            _polledUrl = _config["Telegram:OumanAddress"];
+            _proxyUser = _config["Telegram:OumanUser"];
+            _proxyPass = _config["Telegram:OumanPassword"];
             _todaysDate = DateTime.Today.Date;
             _starTimeSpan = TimeSpan.Zero;
             _fiveMinTimeSpan = TimeSpan.FromMinutes(5);
@@ -80,7 +89,7 @@ namespace RozalinaBot.Collectors.Ouman
             {
                 sb.Clear();
                 sb.Append($"An error occurred when querying {_url}");
-                sb.AppendLine($"Reason {ex.Message}");
+                sb.Append("Reason ").AppendLine(ex.Message);
                 retries--;
                 if (retries > 0) return sb.ToString();
                 StopPolling();
@@ -88,12 +97,12 @@ namespace RozalinaBot.Collectors.Ouman
             }
             return sb.ToString();
         }
-        private static async Task<string> DoRequestAsync(string uri)
+        private async Task<string> DoRequestAsync(string uri)
         {
             string results;
             var request = (HttpWebRequest)WebRequest.Create(uri);
 
-            request.Credentials = new NetworkCredential(AppLoader.LoadedConfig.OumanUser, AppLoader.LoadedConfig.OumanPassword);
+            request.Credentials = new NetworkCredential(_proxyUser, _proxyPass);
             request.PreAuthenticate = true;
             using (var resp = await request.GetResponseAsync())
             {
