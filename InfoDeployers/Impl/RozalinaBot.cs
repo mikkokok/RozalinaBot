@@ -12,9 +12,9 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InputFiles;
 
-namespace RozalinaBot.InfoDeployers.Telegram
+namespace RozalinaBot.InfoDeployers.Impl
 {
-    internal class RozalinaBot
+    internal class RozalinaBot : IRozalinaBot
     {
         private static TelegramBotClient _botClient;
         private const string TuxFile = "Files/tux.png";
@@ -77,18 +77,10 @@ namespace RozalinaBot.InfoDeployers.Telegram
                     break;
             }
         }
-
-        private static string ComposeMessage(string from, string query)
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine($"Message from {from}");
-            sb.Append($"Message: {query}");
-            return sb.ToString();
-        }
         public async Task SendAdminMessages(string message, string from)
         {
             var sb = new StringBuilder(message);
-            sb.AppendLine($"from: {from}");
+            sb.Append("from: ").AppendLine(from);
             foreach (var adminId in GetAdmins())
             {
                 await _botClient.SendTextMessageAsync(adminId, message);
@@ -98,7 +90,7 @@ namespace RozalinaBot.InfoDeployers.Telegram
         {
             var sb = new StringBuilder(message);
             if (!string.IsNullOrEmpty(from))
-                sb.AppendLine($"from: {from}");
+                sb.Append("from: ").AppendLine(from);
             foreach (var adminId in GetAllUsers())
             {
                 await _botClient.SendTextMessageAsync(adminId, message);
