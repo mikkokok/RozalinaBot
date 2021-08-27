@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -28,6 +29,8 @@ namespace RozalinaBot.InfoDeployers.Impl
             _botClient = new TelegramBotClient(_config["Telegram:TelegramToken"]);
             _oumanCollector = new OumanCollector(_config);
             _oumanUsers = _config.GetSection("Telegram").GetSection("OumanRegisteredUsers").Get<List<OumanUser>>();
+            ServicePointManager.Expect100Continue = true;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             InitListeners();
         }
         private void InitListeners()
