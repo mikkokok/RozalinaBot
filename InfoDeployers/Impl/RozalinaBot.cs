@@ -183,8 +183,7 @@ namespace RozalinaBot.InfoDeployers.Impl
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
-                throw;
+                await SendMessage($"I am having problems {ex.Message}", sendToId);
             }
         }
     }
