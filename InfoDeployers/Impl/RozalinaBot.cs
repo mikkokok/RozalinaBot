@@ -1,11 +1,13 @@
 ﻿using Microsoft.Extensions.Configuration;
 using RozalinaBot.Collectors.Ouman;
 using RozalinaBot.Config;
+using RozalinaBot.Helpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -22,11 +24,13 @@ namespace RozalinaBot.InfoDeployers.Impl
         private static OumanCollector _oumanCollector;
         private IConfiguration _config;
         private List<OumanUser> _oumanUsers;
+        private string _doorBellUrl;
 
         public RozalinaBot(IConfiguration config)
         {
             _config = config;
             _botClient = new TelegramBotClient(_config["Telegram:TelegramToken"]);
+            _doorBellUrl = _config["doorBellPictureUrl"];
             _oumanCollector = new OumanCollector(_config);
             _oumanUsers = _config.GetSection("Telegram").GetSection("OumanRegisteredUsers").Get<List<OumanUser>>();
             ServicePointManager.Expect100Continue = true;
@@ -61,6 +65,9 @@ namespace RozalinaBot.InfoDeployers.Impl
                 case "/photo":
                     await SendTuxFile(message.Chat.Id);
                     break;
+                case "/getDoorBell":
+                    await SendDoorBellPicture(message.From.Id);
+                    break;
                 //case "/setCatLitter":
                 //    await _storageCollector.UpdateCatLitterTime();
                 //    await SendMessage("Cat litter time set", message.From.Id);
@@ -71,6 +78,9 @@ namespace RozalinaBot.InfoDeployers.Impl
                 //    break;
                 case "/readme":
                 case "/Readme":
+                case "/HowTo":
+                case "/how":
+                case "/usage":
                 case "/":
                 case "/Usage":
                     await ReplyUsage(message.From.Id);
@@ -143,6 +153,7 @@ namespace RozalinaBot.InfoDeployers.Impl
             sb.AppendLine("/startOuman - start reading Ouman readings");
             sb.AppendLine("/stopOuman - stop reading Ouman readings");
             sb.AppendLine("/photo - send a photo");
+            sb.AppendLine("/getDoorBell - send a photo from front door");
             //sb.AppendLine("/getCatLitter - Get last time");
             //sb.AppendLine("/setCatLitter - Set last time");
             sb.AppendLine("/Usage /Readme - send this how-to");
@@ -152,6 +163,29 @@ namespace RozalinaBot.InfoDeployers.Impl
         private static async Task SendMessage(string message, int replyToId)
         {
             await _botClient.SendTextMessageAsync(replyToId, message);
+        }
+
+        private async Task SendDoorBellPicture(int sendToId)
+        {
+            //await _botClient.SendChatActionAsync(sendToId, ChatAction.UploadPhoto);
+
+            using var client = new HttpClient();
+            try
+            {
+                var response = await client.GetAsync("http://nikalink.kokkonen.pro:8765/picture/1/current/");
+                using var stream = await response.Content.ReadAsStreamAsync();
+                using var memStream = new MemoryStream();
+                await stream.CopyToAsync(memStream);
+                memStream.Position = 0;
+                //bitmap.SetSource(memStream.AsRandomAccessStream());
+                var fileToSend = new InputOnlineFile(memStream, "doorbell.jpeg");
+                await _botClient.SendPhotoAsync(sendToId, fileToSend, TimeConverter.GetCurrentTimeAsString());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                throw;
+            }
         }
     }
 }
