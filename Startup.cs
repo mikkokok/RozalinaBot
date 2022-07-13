@@ -20,10 +20,9 @@ namespace RozalinaBot
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddTransient<IRozalinaBot>(_ => new InfoDeployers.Impl.RozalinaBot(Configuration));
+            services.AddSingleton<IRozalinaBot>(_ => new InfoDeployers.Impl.RozalinaBot(Configuration));
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
@@ -43,14 +42,12 @@ namespace RozalinaBot
                     }
                 });
 
-                // Set the comments path for the Swagger JSON and UI.
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
             });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())

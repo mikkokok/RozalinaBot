@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using RozalinaBot.Collectors.Ouman;
+using RozalinaBot.Collectors.StorageAccount;
 using RozalinaBot.Config;
 using RozalinaBot.Helpers;
 using System;
@@ -25,11 +26,16 @@ namespace RozalinaBot.InfoDeployers.Impl
         private IConfiguration _config;
         private List<OumanUser> _oumanUsers;
         private string _doorBellUrl;
+        private static StorageCollector _storageCollector;
+        private int _dailyDiapers = 0;
+        private DateTime _latestDiaperChange = DateTime.Today.Date;
+
 
         public RozalinaBot(IConfiguration config)
         {
             _config = config;
             _botClient = new TelegramBotClient(_config["Telegram:TelegramToken"]);
+            _storageCollector = new StorageCollector(_config["storageTableSASUrl"]);
             _doorBellUrl = _config["doorBellPictureUrl"];
             _oumanCollector = new OumanCollector(_config);
             _oumanUsers = _config.GetSection("Telegram").GetSection("OumanRegisteredUsers").Get<List<OumanUser>>();
@@ -68,14 +74,21 @@ namespace RozalinaBot.InfoDeployers.Impl
                 case "/getDoorBell":
                     await SendDoorBellPicture(message.From.Id);
                     break;
-                //case "/setCatLitter":
-                //    await _storageCollector.UpdateCatLitterTime();
-                //    await SendMessage("Cat litter time set", message.From.Id);
-                //    break;
-                //case "/getCatLitter":
-                //    var time = await _storageCollector.GetCatLitterTime();
-                //    await SendMessage($"Last time was {time}", message.From.Id);
-                //    break;
+                case "/setCatLitter":
+                    await _storageCollector.UpdateCatLitterTime();
+                    await SendMessage("Cat litter time set", message.From.Id);
+                    break;
+                case "/getCatLitter":
+                    var time = await _storageCollector.GetCatLitterTime();
+                    await SendMessage($"Last time was {time}", message.From.Id);
+                    break;
+                case "/addDiaper":
+                    addDiaperChange();
+                    await SendMessage($"Added one totaling to {_dailyDiapers}", message.From.Id);
+                    break;
+                case "/getDiapers":                    
+                    await SendMessage($"Changes so far {_dailyDiapers}", message.From.Id);
+                    break;
                 case "/readme":
                 case "/Readme":
                 case "/HowTo":
@@ -154,10 +167,11 @@ namespace RozalinaBot.InfoDeployers.Impl
             sb.AppendLine("/stopOuman - stop reading Ouman readings");
             sb.AppendLine("/photo - send a photo");
             sb.AppendLine("/getDoorBell - send a photo from front door");
-            //sb.AppendLine("/getCatLitter - Get last time");
-            //sb.AppendLine("/setCatLitter - Set last time");
+            sb.AppendLine("/getCatLitter - Get last time");
+            sb.AppendLine("/setCatLitter - Set last time");
+            sb.AppendLine("/addDiaper - Add one diaper change for the day");
+            sb.AppendLine("/getDiapers - Get daily amount of diapers");
             sb.AppendLine("/Usage /Readme - send this how-to");
-
             return sb.ToString();
         }
         private static async Task SendMessage(string message, int replyToId)
@@ -167,8 +181,6 @@ namespace RozalinaBot.InfoDeployers.Impl
 
         private async Task SendDoorBellPicture(int sendToId)
         {
-            //await _botClient.SendChatActionAsync(sendToId, ChatAction.UploadPhoto);
-
             using var client = new HttpClient();
             try
             {
@@ -177,13 +189,24 @@ namespace RozalinaBot.InfoDeployers.Impl
                 using var memStream = new MemoryStream();
                 await stream.CopyToAsync(memStream);
                 memStream.Position = 0;
-                //bitmap.SetSource(memStream.AsRandomAccessStream());
                 var fileToSend = new InputOnlineFile(memStream, "doorbell.jpeg");
                 await _botClient.SendPhotoAsync(sendToId, fileToSend, TimeConverter.GetCurrentTimeAsString());
             }
             catch (Exception ex)
             {
                 await SendMessage($"I am having problems {ex.Message}", sendToId);
+            }
+        }
+        private void addDiaperChange ()
+        {
+            if (_latestDiaperChange != DateTime.Today.Date)
+            {
+                _latestDiaperChange = DateTime.Today.Date;
+                _dailyDiapers = 1;
+            }
+            else
+            {
+                _dailyDiapers++;
             }
         }
     }
