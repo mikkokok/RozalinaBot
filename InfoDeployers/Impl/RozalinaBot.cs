@@ -179,17 +179,24 @@ namespace RozalinaBot.InfoDeployers.Impl
             await _botClient.SendTextMessageAsync(replyToId, message);
         }
 
-        private async Task SendDoorBellPicture(int sendToId)
+        public async Task SendDoorBellPicture(int sendToId = 0)
         {
             using var client = new HttpClient();
             try
             {
-                var response = await client.GetAsync("http://nikalink.kokkonen.pro:8765/picture/1/current/");
+                var response = await client.GetAsync(_doorBellUrl);
                 using var stream = await response.Content.ReadAsStreamAsync();
                 using var memStream = new MemoryStream();
                 await stream.CopyToAsync(memStream);
                 memStream.Position = 0;
                 var fileToSend = new InputOnlineFile(memStream, "doorbell.jpeg");
+                if (sendToId == 0)
+                {
+                    foreach(int user in GetAllUsers())
+                    {
+                        await _botClient.SendPhotoAsync(user, fileToSend, TimeConverter.GetCurrentTimeAsString());
+                    }
+                }
                 await _botClient.SendPhotoAsync(sendToId, fileToSend, TimeConverter.GetCurrentTimeAsString());
             }
             catch (Exception ex)
@@ -197,7 +204,7 @@ namespace RozalinaBot.InfoDeployers.Impl
                 await SendMessage($"I am having problems {ex.Message}", sendToId);
             }
         }
-        private void addDiaperChange ()
+        public void addDiaperChange ()
         {
             if (_latestDiaperChange != DateTime.Today.Date)
             {

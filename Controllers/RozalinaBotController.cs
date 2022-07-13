@@ -22,9 +22,24 @@ namespace RozalinaBot.Controllers
             _apikeyValidator = new ApikeyValidator(_config);
         }
         [HttpGet]
-        public IEnumerable<string> Get()
+        public async Task<IActionResult> Get(string apikey, string feature)
         {
-            return new string[] { "value1", "value2" };
+            if (!_apikeyValidator.validateApiKey(apikey))
+            {
+                return Unauthorized();
+            }
+
+            if (feature == "doorbell")
+            {
+                await _rozabot.SendDoorBellPicture();
+            }
+            if (feature == "diaper")
+            {
+                _rozabot.addDiaperChange();
+            }
+
+            return Ok();
+
         }
 
         [HttpPost]

@@ -8,5 +8,8 @@ namespace RozalinaBot.InfoDeployers
         Task SendAdminMessages(string message, string from);
 
         Task SendToAll(string message, string from = "");
+
+        Task SendDoorBellPicture(int sendToId = 0);
+        void addDiaperChange();
     }
 }
