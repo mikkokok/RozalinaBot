@@ -37,9 +37,17 @@ namespace RozalinaBot.Controllers
             {
                 _rozabot.addDiaperChange();
             }
+            if (feature == "boilerroomflood")
+            {
+                await _rozabot.SendToAll("Flood detected in boiler room");
+            }
+            if (feature == "kitchenflood")
+            {
+                await _rozabot.SendToAll("Flood detected in kitchen");
+            }
+
 
             return Ok();
-
         }
 
         [HttpPost]

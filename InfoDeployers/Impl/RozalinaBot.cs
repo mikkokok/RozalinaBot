@@ -29,6 +29,7 @@ namespace RozalinaBot.InfoDeployers.Impl
         private static StorageCollector _storageCollector;
         private int _dailyDiapers = 0;
         private DateTime _latestDiaperChange = DateTime.Today.Date;
+        private string _numberLightIP;
 
 
         public RozalinaBot(IConfiguration config)
@@ -39,6 +40,7 @@ namespace RozalinaBot.InfoDeployers.Impl
             _doorBellUrl = _config["doorBellPictureUrl"];
             _oumanCollector = new OumanCollector(_config);
             _oumanUsers = _config.GetSection("Telegram").GetSection("OumanRegisteredUsers").Get<List<OumanUser>>();
+            _numberLightIP = _config["NumberLightIP"];
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             InitListeners();
@@ -194,14 +196,18 @@ namespace RozalinaBot.InfoDeployers.Impl
                 {
                     foreach(int user in GetAllUsers())
                     {
-                        await _botClient.SendPhotoAsync(user, fileToSend, TimeConverter.GetCurrentTimeAsString());
+                        await SendDoorBellPicture(user);
                     }
                 }
-                await _botClient.SendPhotoAsync(sendToId, fileToSend, TimeConverter.GetCurrentTimeAsString());
+                else
+                {
+                    await _botClient.SendPhotoAsync(sendToId, fileToSend, TimeConverter.GetCurrentTimeAsString());
+                }
+                
             }
             catch (Exception ex)
             {
-                await SendMessage($"I am having problems {ex.Message}", sendToId);
+                await SendMessage($"I am having problems while sending doorbell messages {ex.Message}", sendToId);
             }
         }
         public void addDiaperChange ()

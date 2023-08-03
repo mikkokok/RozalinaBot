@@ -27,7 +27,7 @@ namespace RozalinaBot.Collectors.Ouman
         private DateTime _todaysDate;
         private bool _polling;
         private int retries;
-        public string PollingState { get; private set; }
+        public string PollingState { get; }
         private IConfiguration _config;
         private string _proxyUser;
         private string _proxyPass;
@@ -72,7 +72,7 @@ namespace RozalinaBot.Collectors.Ouman
             var sb = new StringBuilder();
             try
             {
-                _url = $"{address}request?S_227_85;S_1000_0;S_261_85;S_278_85;S_259_85;S_275_85;S_102_85;S_284_85;S_274_85;S_272_85;";
+                _url = $"{address}request?S_227_85;S_1000_0;S_261_85;S_278_85;S_259_85;S_275_85;S_272_85;";
                 var result = await DoRequestAsync(_url);
                 if (string.IsNullOrEmpty(result))
                     return "";
@@ -184,11 +184,6 @@ namespace RozalinaBot.Collectors.Ouman
             sb.AppendLine($"Minimi lämpötila = {_dailyMinTemp} kello: {_dailyMinTempTime}");
             sb.AppendLine($"Maksimi lämpötila = {_dailyMaxTemp} kello: {_dailyMaxTempTime}");
             return sb.ToString();
-        }
-
-        private void SetPollingState(string newState)
-        {
-            PollingState = newState;
         }
     }
 }

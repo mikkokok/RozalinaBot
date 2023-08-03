@@ -22,7 +22,7 @@ namespace RozalinaBot
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<IRozalinaBot>(_ => new InfoDeployers.Impl.RozalinaBot(Configuration));
+            
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
@@ -46,6 +46,7 @@ namespace RozalinaBot
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
             });
+            services.AddSingleton<IRozalinaBot>(_ => new InfoDeployers.Impl.RozalinaBot(Configuration));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
