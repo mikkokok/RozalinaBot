@@ -41,9 +41,17 @@ namespace RozalinaBot.Controllers
             {
                 await _rozabot.SendToAll("Flood detected in boiler room");
             }
+            if (feature == "boilerroomfloodgone")
+            {
+                await _rozabot.SendToAll("Flood no longer detected in boiler room");
+            }
             if (feature == "kitchenflood")
             {
                 await _rozabot.SendToAll("Flood detected in kitchen");
+            }
+            if (feature == "kitchenfloodgone")
+            {
+                await _rozabot.SendToAll("Flood no longer detected in kitchen");
             }
 
 
